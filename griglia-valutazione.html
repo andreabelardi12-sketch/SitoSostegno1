@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalizza Griglia Valutazione</title>
+    <style>
+        body { font-family: sans-serif; background: #fff3e0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #e65100; margin-bottom: 5px; }
+        label { font-weight: bold; color: #e65100; display: block; margin-top: 20px; margin-bottom: 8px; }
+        textarea { width: 100%; padding: 12px; border: 2px solid #ffb74d; border-radius: 8px; box-sizing: border-box; resize: vertical; }
+        button { background: #f57c00; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 1.1em; margin-top: 20px; }
+        button:hover { background: #e65100; }
+        #risultato { margin-top: 30px; padding: 20px; background: #fff8e1; border-left: 6px solid #ffb300; display: none; line-height: 1.6; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #ffe0b2; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 Adatta Griglia al PEI</h2>
+    
+    <label>1. Profilo di funzionamento dello studente:</label>
+    <textarea id="profiloInput" rows="4" placeholder="Es. L'alunno ha buone capacità visive ma fatica nell'esposizione complessa..."></textarea>
+    
+    <label>2. Incolla la griglia ministeriale originale:</label>
+    <textarea id="grigliaInput" rows="6" placeholder="Incolla qui il testo o i descrittori della griglia..."></textarea>
+    
+    <button onclick="adattaGriglia()">Crea Griglia Personalizzata ✨</button>
+    
+    <div id="risultato"></div>
+</div>
+
+<script>
+    // Funzione per trasformare i formatti Markdown (come il grassetto) in HTML
+    function formattaTesto(testo) {
+        let formattato = testo.replace(/\n/g, '<br>');
+        formattato = formattato.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        return formattato;
+    }
+
+    async function adattaGriglia() {
+        const profilo = document.getElementById('profiloInput').value;
+        const griglia = document.getElementById('grigliaInput').value;
+        const div = document.getElementById('risultato');
+
+        if (!profilo || !griglia) return alert('Compila entrambi i campi!');
+
+        div.style.display = 'block';
+        div.innerHTML = "⏳ <strong>Attendere...</strong> Sto elaborando i nuovi descrittori.";
+
+        try {
+            // Nota il punto prima di netlify! Serve per dire al browser di cercare sul server.
+            const response = await fetch('/.netlify/functions/adatta_griglia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profilo: profilo, griglia: griglia })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                div.innerHTML = formattaTesto(data.risultato);
+            } else {
+                div.innerHTML = "❌ Errore: " + data.error;
+            }
+        } catch (error) {
+            div.innerHTML = "❌ Errore di connessione: " + error.message;
+        }
+    }
+</script>
+
+</body>
+</html>
